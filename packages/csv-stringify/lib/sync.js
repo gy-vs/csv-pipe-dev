@@ -1,7 +1,18 @@
 import { stringifier } from "./api/index.js";
 import { normalize_options } from "./api/normalize_options.js";
+import { is_async_iterable, is_sync_iterable } from "./utils/is_records.js";
 
 const stringify = function (records, opts = {}) {
+  if (!is_sync_iterable(records)) {
+    if (is_async_iterable(records)) {
+      throw Error(
+        "Invalid Records: async iterables are not supported by the sync API, use the callback or stream API instead",
+      );
+    }
+    throw Error(
+      "Invalid Records: expect an array or a synchronous iterable of records",
+    );
+  }
   const data = [];
   const [err, options] = normalize_options(opts);
   if (err !== undefined) throw err;

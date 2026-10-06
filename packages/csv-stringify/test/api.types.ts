@@ -1,7 +1,9 @@
 import "should";
+import { Readable } from "stream";
 import {
   stringify,
   CastingContext,
+  Input,
   Options,
   Stringifier,
 } from "../lib/index.js";
@@ -44,6 +46,40 @@ describe("API Types", function () {
           next(err);
         },
       );
+    });
+
+    it("Accept iterable sources", function () {
+      function* gen() {
+        yield ["a", 1];
+        yield ["b", 2];
+      }
+      async function* agen() {
+        yield ["a", 1];
+        yield ["b", 2];
+      }
+      // Sync generator
+      const a: Stringifier = stringify(gen());
+      // Async generator
+      const b: Stringifier = stringify(agen());
+      // Set and Map.values()
+      stringify(new Set([["a", 1]]));
+      stringify(new Map<string, unknown[]>().values());
+      // Node.js readable stream
+      const source: Readable = new Readable({
+        objectMode: true,
+        read() {},
+      });
+      stringify(source);
+      // With options and callback
+      stringify(
+        gen(),
+        { eof: false },
+        (err: Error | undefined, output: string) => err || output,
+      );
+      a;
+      b;
+      const input: Input = agen();
+      input;
     });
   });
 

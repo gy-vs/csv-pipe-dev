@@ -1,6 +1,15 @@
-import { Input, Options } from "./index.cjs";
+import { Options } from "./index.cjs";
 
-declare function stringify(input: Input, options?: Options): string;
+/**
+ * Source of records accepted by the sync API: arrays and synchronous
+ * iterables (generators, `Set`, `Map.values()`, ...).
+ */
+export type SyncInput = ReadonlyArray<unknown> | Iterable<unknown>;
+
+declare function stringify(
+  input: ReadonlyArray<unknown> | Iterable<unknown>,
+  options?: Options,
+): string;
 
 export { stringify };
 

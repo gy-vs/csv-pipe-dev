@@ -2746,7 +2746,42 @@
               };
             };
 
+            // True when `value` is a synchronous iterable source of records.
+            // Strings and Buffers are iterable but must not be treated as a record
+            // source, otherwise they would be consumed one character (or one byte) at
+            // a time.
+            const is_sync_iterable = function (value) {
+              return (
+                value !== null &&
+                typeof value === "object" &&
+                !isBuffer(value) &&
+                typeof value[Symbol.iterator] === "function"
+              );
+            };
+
+            // True when `value` is an asynchronous iterable source of records, such as
+            // an async generator or a Node.js readable stream. Buffers are iterable
+            // but excluded.
+            const is_async_iterable = function (value) {
+              return (
+                value !== null &&
+                typeof value === "object" &&
+                !isBuffer(value) &&
+                typeof value[Symbol.asyncIterator] === "function"
+              );
+            };
+
             const stringify = function (records, opts = {}) {
+              if (!is_sync_iterable(records)) {
+                if (is_async_iterable(records)) {
+                  throw Error(
+                    "Invalid Records: async iterables are not supported by the sync API, use the callback or stream API instead",
+                  );
+                }
+                throw Error(
+                  "Invalid Records: expect an array or a synchronous iterable of records",
+                );
+              }
               const data = [];
               const [err, options] = normalize_options(opts);
               if (err !== undefined) throw err;

@@ -13,6 +13,13 @@ export type HandlerCallback<T = unknown> = (
 ) => void;
 export type Callback = (err?: null | Error, output?: string) => void;
 
+/**
+ * Source of records: arrays, synchronous iterables (generators, `Set`,
+ * `Map.values()`, ...) and asynchronous iterables (async generators,
+ * Node.js readable streams).
+ */
+export type Records<T> = ReadonlyArray<T> | Iterable<T> | AsyncIterable<T>;
+
 export interface Options extends stream.TransformOptions {
   /**
    * In the absence of a consumer, like a `stream.Readable`, trigger the consumption of the stream.
@@ -38,24 +45,35 @@ export class Transformer extends stream.Transform {
   readonly state: State;
 }
 
-declare function transform<T = unknown, U = unknown>(
-  handler: Handler<T, U>,
+declare function transform<U = unknown>(
+  handler: Handler<unknown, U>,
   callback?: Callback,
 ): Transformer;
-declare function transform<T = unknown, U = unknown>(
-  records: Array<T>,
-  handler: Handler<T, U>,
+declare function transform<T, U = unknown>(
+  records: ReadonlyArray<T> | Iterable<T>,
+  handler: Handler<Awaited<T>, U>,
   callback?: Callback,
 ): Transformer;
-declare function transform<T = unknown, U = unknown>(
+declare function transform<T, U = unknown>(
+  records: AsyncIterable<Awaited<T>>,
+  handler: Handler<Awaited<T>, U>,
+  callback?: Callback,
+): Transformer;
+declare function transform<U = unknown>(
   options: Options,
-  handler: Handler<T, U>,
+  handler: Handler<unknown, U>,
   callback?: Callback,
 ): Transformer;
-declare function transform<T = unknown, U = unknown>(
-  records: Array<T>,
+declare function transform<T, U = unknown>(
+  records: ReadonlyArray<T> | Iterable<T>,
   options: Options,
-  handler: Handler<T, U>,
+  handler: Handler<Awaited<T>, U>,
+  callback?: Callback,
+): Transformer;
+declare function transform<T, U = unknown>(
+  records: AsyncIterable<Awaited<T>>,
+  options: Options,
+  handler: Handler<Awaited<T>, U>,
   callback?: Callback,
 ): Transformer;
 

@@ -4,12 +4,12 @@ import { Options } from "./index.cjs";
 
 export type Handler<T = unknown, U = unknown> = (record: T) => U;
 
-export function transform<T = unknown, U = unknown>(
-  records: Array<T>,
+export function transform<T, U = unknown>(
+  records: ReadonlyArray<T> | Iterable<T>,
   handler: Handler<T, U>,
 ): Array<U>;
-export function transform<T = unknown, U = unknown>(
-  records: Array<T>,
+export function transform<T, U = unknown>(
+  records: ReadonlyArray<T> | Iterable<T>,
   options: Options,
   handler: Handler<T, U>,
 ): Array<U>;

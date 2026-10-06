@@ -4,13 +4,7 @@ import * as stream from "stream";
 
 export type Callback = (err: Error | undefined, output: string) => void;
 export type RecordDelimiter =
-  | string
-  | Buffer
-  | "unix"
-  | "mac"
-  | "windows"
-  | "ascii"
-  | "unicode";
+  string | Buffer | "unix" | "mac" | "windows" | "ascii" | "unicode";
 
 export type CastReturnObject = { value: string } & Pick<
   Options,
@@ -30,7 +24,13 @@ export type Cast<T> = (
 ) => string | null | CastReturnObject;
 
 export type PlainObject<T> = Record<string, T>;
-export type Input = unknown[];
+/**
+ * Source of records accepted by the async, callback and stream APIs:
+ * arrays, synchronous iterables (generators, `Set`, `Map.values()`, ...)
+ * and asynchronous iterables (async generators, Node.js readable streams).
+ */
+export type Input =
+  ReadonlyArray<unknown> | Iterable<unknown> | AsyncIterable<unknown>;
 export interface ColumnOption {
   key: string | (string | number)[];
   header?: string;

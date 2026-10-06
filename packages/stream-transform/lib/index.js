@@ -7,6 +7,8 @@ additional information.
 
 import stream from "stream";
 import util from "util";
+import { is_records } from "./utils/is_records.js";
+import { pump } from "./utils/pump.js";
 
 const Transformer = function (options = {}, handler) {
   this.options = options;
@@ -113,12 +115,12 @@ const transform = function () {
     let type = typeof argument;
     if (argument === null) {
       type = "null";
-    } else if (type === "object" && Array.isArray(argument)) {
-      type = "array";
+    } else if (is_records(argument)) {
+      type = "records";
     }
-    if (type === "array") {
+    if (type === "records") {
       records = argument;
-    } else if (type === "object") {
+    } else if (type === "object" && !Buffer.isBuffer(argument)) {
       options = { ...argument };
     } else if (type === "function") {
       if (handler && i === arguments.length - 1) {
@@ -135,13 +137,22 @@ const transform = function () {
   const transformer = new Transformer(options, handler);
   let error = false;
   if (records) {
-    const writer = function () {
-      for (const record of records) {
-        if (error) break;
-        transformer.write(record);
-      }
-      transformer.end();
-    };
+    let writer;
+    if (Array.isArray(records)) {
+      // Preserve the historical eager-write behavior for arrays
+      writer = function () {
+        for (const record of records) {
+          if (error) break;
+          transformer.write(record);
+        }
+        transformer.end();
+      };
+    } else {
+      // Generators and async iterables are pulled on demand with backpressure
+      writer = function () {
+        pump(records, transformer);
+      };
+    }
     // Support Deno, Rollup doesn't provide a shim for setImmediate
     if (typeof setImmediate === "function") {
       setImmediate(writer);
