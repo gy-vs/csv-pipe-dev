@@ -30,7 +30,16 @@ export type Cast<T> = (
 ) => string | null | CastReturnObject;
 
 export type PlainObject<T> = Record<string, T>;
-export type Input = unknown[];
+/**
+ * Record source accepted by the sync API: an array or any synchronous
+ * iterable (generator, Set, Map.values(), ...).
+ */
+export type Input<T = unknown> = Iterable<T> & object;
+/**
+ * Record source accepted by the streaming API: a synchronous or asynchronous
+ * iterable (async generator, Node.js `Readable`, ...).
+ */
+export type Source<T = unknown> = (Iterable<T> | AsyncIterable<T>) & object;
 export interface ColumnOption {
   key: string | (string | number)[];
   header?: string;
@@ -213,9 +222,12 @@ export class Stringifier extends stream.Transform {
 
 declare function stringify(callback?: Callback): Stringifier;
 declare function stringify(options: Options, callback?: Callback): Stringifier;
-declare function stringify(input: Input, callback?: Callback): Stringifier;
-declare function stringify(
-  input: Input,
+declare function stringify<T>(
+  input: Source<T>,
+  callback?: Callback,
+): Stringifier;
+declare function stringify<T>(
+  input: Source<T>,
   options?: Options,
   callback?: Callback,
 ): Stringifier;

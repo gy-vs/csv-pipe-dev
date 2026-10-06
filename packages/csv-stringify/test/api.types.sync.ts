@@ -17,6 +17,16 @@ describe("API Types", function () {
     stringifier;
   });
 
+  it("accept sync iterables", function () {
+    type Row = [string, number];
+    const generator = function* (): Generator<Row> {
+      yield ["a", 1];
+    };
+    stringify(generator());
+    stringify(new Set<Row>([["a", 1]]));
+    stringify(new Map<string, Row>([["a", ["a", 1]]]).values());
+  });
+
   it("Options", function () {
     (options: Options) => {
       const rd: RecordDelimiter | undefined = options.record_delimiter;

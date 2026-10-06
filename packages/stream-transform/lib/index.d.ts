@@ -38,12 +38,23 @@ export class Transformer extends stream.Transform {
   readonly state: State;
 }
 
+/**
+ * Sync record source: an array or any synchronous iterable
+ * (generator, Set, Map.values(), ...).
+ */
+export type Input<T = unknown> = Iterable<T> & object;
+/**
+ * Sync or async record source: includes async generators and Node.js
+ * `Readable` streams.
+ */
+export type Source<T = unknown> = (Iterable<T> | AsyncIterable<T>) & object;
+
 declare function transform<T = unknown, U = unknown>(
   handler: Handler<T, U>,
   callback?: Callback,
 ): Transformer;
 declare function transform<T = unknown, U = unknown>(
-  records: Array<T>,
+  records: Source<T>,
   handler: Handler<T, U>,
   callback?: Callback,
 ): Transformer;
@@ -53,7 +64,7 @@ declare function transform<T = unknown, U = unknown>(
   callback?: Callback,
 ): Transformer;
 declare function transform<T = unknown, U = unknown>(
-  records: Array<T>,
+  records: Source<T>,
   options: Options,
   handler: Handler<T, U>,
   callback?: Callback,

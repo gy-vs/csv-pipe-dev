@@ -10,6 +10,20 @@ describe("api.types", function () {
     transform(["record"], { consume: true }, (record) => record);
   });
 
+  it("accept sync iterables and infer the handler record type", function () {
+    type Row = { value: number };
+    const generator = function* (): Generator<Row> {
+      yield { value: 1 };
+    };
+    const result: number[] = transform(generator(), (record) => record.value);
+    result.should.be.an.Array();
+    transform(
+      new Set<Row>([{ value: 1 }]),
+      { consume: false },
+      (record) => record.value,
+    );
+  });
+
   it("Options", function () {
     (options: Options) => {
       const consume: boolean | undefined = options.consume;

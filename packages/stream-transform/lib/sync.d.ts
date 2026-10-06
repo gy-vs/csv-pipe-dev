@@ -1,15 +1,15 @@
 /// <reference types="node" />
 
-import { Options } from "./index.js";
+import { Input, Options } from "./index.js";
 
 export type Handler<T = unknown, U = unknown> = (record: T) => U;
 
 export function transform<T = unknown, U = unknown>(
-  records: Array<T>,
+  records: Input<T>,
   handler: Handler<T, U>,
 ): Array<U>;
 export function transform<T = unknown, U = unknown>(
-  records: Array<T>,
+  records: Input<T>,
   options: Options,
   handler: Handler<T, U>,
 ): Array<U>;

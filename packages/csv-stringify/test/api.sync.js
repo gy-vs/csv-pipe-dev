@@ -34,4 +34,39 @@ describe("sync", function () {
       stringify([1, { a: "3", b: "4" }]);
     }).should.throw("Invalid Record: expect an array or an object, got 1");
   });
+
+  it("work on a generator", function () {
+    function* gen() {
+      yield ["a", 1];
+      yield ["b", 2];
+    }
+    stringify(gen()).should.eql("a,1\nb,2\n");
+  });
+
+  it("work on a Set", function () {
+    stringify(
+      new Set([
+        ["a", 1],
+        ["b", 2],
+      ]),
+      { eof: false },
+    ).should.eql("a,1\nb,2");
+  });
+
+  it("reject an async iterable", function () {
+    async function* gen() {
+      yield ["a", 1];
+    }
+    (() => stringify(gen())).should.throw(/does not support async iterables/);
+  });
+
+  it("reject a string", function () {
+    (() => stringify("abc")).should.throw(/not iterated as records/);
+  });
+
+  it("reject a buffer", function () {
+    (() => stringify(Buffer.from("abc"))).should.throw(
+      /not iterated as records/,
+    );
+  });
 });

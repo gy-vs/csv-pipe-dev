@@ -7,6 +7,8 @@ additional information.
 
 import stream from "stream";
 import util from "util";
+import { is_records } from "./utils/is_records.js";
+import { pump } from "./utils/pump.js";
 
 const Transformer = function (options = {}, handler) {
   this.options = options;
@@ -115,9 +117,15 @@ const transform = function () {
       type = "null";
     } else if (type === "object" && Array.isArray(argument)) {
       type = "array";
+    } else if (type === "object" && Buffer.isBuffer(argument)) {
+      type = "buffer";
     }
-    if (type === "array") {
+    if (type === "array" || (type === "object" && is_records(argument))) {
       records = argument;
+    } else if (type === "string" || type === "buffer") {
+      throw new Error(
+        `Invalid Arguments: got a ${type} at position ${i}, strings and buffers are not iterated as records`,
+      );
     } else if (type === "object") {
       options = { ...argument };
     } else if (type === "function") {
@@ -135,13 +143,21 @@ const transform = function () {
   const transformer = new Transformer(options, handler);
   let error = false;
   if (records) {
-    const writer = function () {
-      for (const record of records) {
-        if (error) break;
-        transformer.write(record);
-      }
-      transformer.end();
-    };
+    let writer;
+    if (Array.isArray(records)) {
+      writer = function () {
+        for (const record of records) {
+          if (error) break;
+          transformer.write(record);
+        }
+        transformer.end();
+      };
+    } else {
+      // Sync and async iterables are pumped lazily, honoring backpressure.
+      writer = function () {
+        pump(transformer, records);
+      };
+    }
     // Support Deno, Rollup doesn't provide a shim for setImmediate
     if (typeof setImmediate === "function") {
       setImmediate(writer);

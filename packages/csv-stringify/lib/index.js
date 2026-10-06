@@ -8,6 +8,8 @@ additional information.
 import { Transform } from "stream";
 import { CsvError } from "./api/CsvError.js";
 import { is_object } from "./utils/is_object.js";
+import { is_records } from "./utils/is_records.js";
+import { pump } from "./utils/pump.js";
 import { stringifier } from "./api/index.js";
 import { normalize_options } from "./api/normalize_options.js";
 
@@ -61,8 +63,14 @@ const stringify = function () {
   for (const i in arguments) {
     const argument = arguments[i];
     const type = typeof argument;
-    if (data === undefined && Array.isArray(argument)) {
+    if (data === undefined && is_records(argument)) {
       data = argument;
+    } else if (type === "string" || Buffer.isBuffer(argument)) {
+      throw new CsvError("CSV_INVALID_ARGUMENT", [
+        "Invalid argument:",
+        `got a ${type === "string" ? "string" : "buffer"} at index ${i},`,
+        "strings and buffers are not iterated as records",
+      ]);
     } else if (options === undefined && is_object(argument)) {
       options = argument;
     } else if (callback === undefined && type === "function") {
@@ -98,12 +106,20 @@ const stringify = function () {
     });
   }
   if (data !== undefined) {
-    const writer = function () {
-      for (const record of data) {
-        stringifier.write(record);
-      }
-      stringifier.end();
-    };
+    let writer;
+    if (Array.isArray(data)) {
+      writer = function () {
+        for (const record of data) {
+          stringifier.write(record);
+        }
+        stringifier.end();
+      };
+    } else {
+      // Sync and async iterables are pumped lazily, honoring backpressure.
+      writer = function () {
+        pump(stringifier, data);
+      };
+    }
     // Support Deno, Rollup doesn't provide a shim for setImmediate
     if (typeof setImmediate === "function") {
       setImmediate(writer);

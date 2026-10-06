@@ -1,7 +1,33 @@
 import { stringifier } from "./api/index.js";
+import { CsvError } from "./api/CsvError.js";
 import { normalize_options } from "./api/normalize_options.js";
+import { is_async_iterable, is_sync_iterable } from "./utils/is_records.js";
+
+// The sync API only consumes sync iterables; async sources would otherwise be
+// silently ignored and yield an empty output.
+const assert_sync_records = function (records) {
+  if (typeof records === "string" || Buffer.isBuffer(records)) {
+    throw new CsvError("CSV_INVALID_ARGUMENT", [
+      "Invalid argument:",
+      "strings and buffers are not iterated as records",
+    ]);
+  }
+  if (is_async_iterable(records) && !is_sync_iterable(records)) {
+    throw new CsvError("CSV_INVALID_ARGUMENT", [
+      "Invalid argument:",
+      "the sync API does not support async iterables",
+    ]);
+  }
+  if (records != null && !is_sync_iterable(records)) {
+    throw new CsvError("CSV_INVALID_ARGUMENT", [
+      "Invalid argument:",
+      "records must be a sync iterable",
+    ]);
+  }
+};
 
 const stringify = function (records, opts = {}) {
+  assert_sync_records(records);
   const data = [];
   const [err, options] = normalize_options(opts);
   if (err !== undefined) throw err;

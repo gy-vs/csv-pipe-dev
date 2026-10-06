@@ -1,4 +1,5 @@
 import "should";
+import { Readable } from "stream";
 import { transform, Options, Transformer } from "../lib/index.js";
 
 describe("api.types", function () {
@@ -25,6 +26,46 @@ describe("api.types", function () {
         (record) => record,
         (err, records) => err || records,
       );
+    });
+
+    it("accept iterable sources and infer the handler record type", function () {
+      type Row = { value: number };
+      // Sync generator
+      const generator = function* (): Generator<Row> {
+        yield { value: 1 };
+      };
+      transform(
+        generator(),
+        (record) => {
+          const value: number = record.value;
+          return { doubled: value * 2 };
+        },
+        (err, records) => err || records,
+      );
+      // Set
+      transform(new Set<Row>([{ value: 1 }]), (record) => record.value);
+      // Map.values()
+      const records: IterableIterator<Row> = new Map<string, Row>([
+        ["a", { value: 1 }],
+      ]).values();
+      transform(records, { consume: true }, (record) => record.value);
+      // Async generator
+      const asyncGenerator = async function* (): AsyncGenerator<Row> {
+        yield { value: 1 };
+      };
+      transform(
+        asyncGenerator(),
+        (record) => {
+          const value: number = record.value;
+          return value;
+        },
+        (err, result) => err || result,
+      );
+      // Node.js Readable
+      const readable: Readable = Readable.from([{ value: 1 }] as Row[], {
+        objectMode: true,
+      });
+      transform(readable, (record) => record.value);
     });
   });
 
